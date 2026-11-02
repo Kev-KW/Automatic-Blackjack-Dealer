@@ -29,6 +29,8 @@ class Player:
         self.cards: list[int] = []
         self.busted = False
         self.has_blackjack = False
+        self.stood = False
+        self.turn_finished = False
 
     def add_card(self, value: int) -> None:
         self.cards.append(value)
@@ -60,11 +62,12 @@ class Player:
 
     def mark_busted(self) -> None:
         self.busted = True
-        print("Busted!")
 
     def mark_blackjack(self) -> None:
         self.has_blackjack = True
-        print("Blackjack!")
+
+    def mark_stood(self) -> None:
+        self.stood = True
 
 
 def get_card() -> int:
@@ -104,17 +107,28 @@ def display_table(
     print()
     if dealer_revealed:
         dealer_label = f"DEALER: {dealer.display_hand()}"
-        dealer_cards = f"{dealer.display_cards()} (Card Revealed)"
+        dealer_cards = dealer.display_cards()
     else:
         covered_cards = display_card_value(dealer.cards[0])
         if len(dealer.cards) > 1:
             covered_cards += " [COVERED]"
         dealer_label = f"DEALER: {display_card_value(visible_dealer_total)}"
-        dealer_cards = f"{covered_cards} (Card Covered)"
+        dealer_cards = covered_cards
     print(f"{dealer_label:<20}|| {dealer_cards}")
 
     for index, player in enumerate(players, start=1):
-        marker = " <--- CURRENT TURN" if index == current_player else ""
+        if player.busted:
+            marker = " <--- BUST"
+        elif player.has_blackjack:
+            marker = " <--- BLACKJACK"
+        elif player.stood:
+            marker = " <--- STAND"
+        elif index == current_player:
+            marker = " <--- CURRENT TURN"
+        elif player.turn_finished:
+            marker = " <---"
+        else:
+            marker = ""
         player_label = f"PLAYER {index}: {player.display_hand()}"
         print(f"{player_label:<20}|| {player.display_cards()}{marker}")
     print()
@@ -128,7 +142,6 @@ def read_action(
     player_number: int,
 ) -> str:
     """Wait for a valid action from the specified player's remote."""
-    print(f"Waiting for Player {player_number}: press HIT or STAND.")
     while True:
         line = connection.readline().decode(errors="ignore").strip()
         if not line:
@@ -172,7 +185,7 @@ def play_player(
             player_number,
         )
         if action == "stand":
-            print(f"Player {player_number} stands with hand: {player.hand}")
+            player.mark_stood()
             break
 
         add_card(player)
@@ -189,6 +202,7 @@ def play_player(
         else:
             time.sleep(PLAYER_ACTION_DELAY_SECONDS)
             connection.reset_input_buffer()
+    player.turn_finished = True
 
 
 def play_dealer(
@@ -247,9 +261,16 @@ def game(player_count: int) -> None:
         for player in players:
             if len(player.cards) == 2 and player.hand == 21:
                 player.mark_blackjack()
+                player.turn_finished = True
 
         for index, player in enumerate(players, start=1):
-            display_table(players, dealer, dealer_visible_total, current_player=index)
+            current_player = index if player.is_eligible() else None
+            display_table(
+                players,
+                dealer,
+                dealer_visible_total,
+                current_player=current_player,
+            )
             play_player(
                 connection,
                 players,
