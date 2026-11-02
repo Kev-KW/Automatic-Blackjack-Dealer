@@ -1,4 +1,11 @@
-"""Play a placeholder blackjack game using the Arduino remote controls."""
+"""Play a placeholder blackjack game using the Arduino remote controls.
+ TODO: 
+    1. RASPPI CAM
+    2. AC Motor Movement based on player count
+    3. DC Motor Card Dispense
+    4. LCD screen display
+
+"""
 
 import random
 import re
