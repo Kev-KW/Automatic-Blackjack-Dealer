@@ -7,6 +7,7 @@
 
 """
 
+from contextlib import nullcontext
 import random
 import re
 import sys
@@ -164,13 +165,13 @@ def read_action(
             continue
         action_player, action_name = action
         if action_player != player_number:
-            print(f"Ignoring action from Player {action_player}.")
             display_table(
                 players,
                 dealer,
                 dealer_visible_total,
                 current_player=player_number,
             )
+            print(f"Ignoring action from Player {action_player}.")
             continue
         return action_name
 
@@ -232,31 +233,37 @@ def play_dealer(
 def report_results(players: list[Player], dealer: Player) -> None:
     for index, player in enumerate(players, start=1):
         if player.busted:
-            print(f"Player {index} busted.")
+            print(f"Player {index} BUSTED!")
         elif dealer.busted:
-            print(f"Dealer busted. Player {index} wins.")
+            print(f"Player {index} WON!")
         elif player.hand > dealer.hand:
-            print(f"Player {index} wins with hand: {player.hand}")
+            print(f"Player {index} WON!")
         elif player.hand < dealer.hand:
-            print(f"Dealer wins against Player {index} with hand: {dealer.hand}")
+            print(f"Player {index} LOST!")
         else:
-            print(f"Player {index} and Dealer tie with hand: {player.hand}")
+            print(f"Player {index} TIED!")
 
 
-def game(player_count: int) -> None:
+def game(player_count: int, connection: serial.Serial | None = None) -> None:
     if not 1 <= player_count <= 4:
         raise ValueError("The number of players must be between 1 and 4.")
 
     players = [Player() for _ in range(player_count)]
     dealer = Player()
 
-    with serial.Serial(
+    serial_connection = connection or serial.Serial(
         settings.SERIAL_PORT,
         settings.BAUD_RATE,
         timeout=settings.SERIAL_TIMEOUT_SECONDS,
-    ) as connection:
+    )
+    connection_context = (
+        nullcontext(serial_connection)
+        if connection is not None
+        else serial_connection
+    )
+    with connection_context as active_connection:
         time.sleep(2)
-        connection.reset_input_buffer()
+        active_connection.reset_input_buffer()
         print(f"Connected to Arduino on {settings.SERIAL_PORT}.")
 
         dealer_visible_total = add_card(dealer)
@@ -279,7 +286,7 @@ def game(player_count: int) -> None:
                 current_player=current_player,
             )
             play_player(
-                connection,
+                active_connection,
                 players,
                 dealer,
                 player,
@@ -287,7 +294,9 @@ def game(player_count: int) -> None:
                 dealer_visible_total,
             )
         print("Dealer's turn.")
+        active_connection.reset_input_buffer()
         play_dealer(players, dealer)
+        active_connection.reset_input_buffer()
 
     report_results(players, dealer)
 

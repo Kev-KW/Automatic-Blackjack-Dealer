@@ -20,7 +20,7 @@ pip install pyserial
 1. Edit `settings.py` and set `SERIAL_PORT`.
 2. Run:
    ```bash
-   python capture_remote_codes.py
+   python -m src.setup.capture_remote_codes
    ```
 3. Press each remote button and copy the printed decimal codes into:
    - `PLAYER_1_HIT`, `PLAYER_1_STAND`
@@ -30,7 +30,7 @@ pip install pyserial
 
 ### 4) Run action listener
 ```bash
-python remote_action_listener.py
+python -m src.setup.remote_action_listener
 ```
 
 When a mapped button is pressed, it prints messages like:
@@ -45,3 +45,19 @@ python blackjack.py 4
 
 The game waits for each player's configured HIT or STAND remote button. Card
 values are currently placeholders generated randomly from 1 through 10.
+
+### 6) Run game setup
+To select the number of players and restart games using the remotes:
+```bash
+python src/gameSetup.py
+```
+
+Press any registered remote button to cycle from 1 through 4 players. Press
+any registered STAND button to confirm the player count and start blackjack.
+After a game ends, remove all cards and press any button to start setup again.
+
+### 7) Run the graphical display
+To show setup and game output in a black window with green text:
+```bash
+python src/blackjack_gui.py
+```

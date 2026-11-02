@@ -4,7 +4,7 @@ import time
 
 import serial
 
-import settings
+from src import settings
 
 
 ACTION_MAPPINGS = [
