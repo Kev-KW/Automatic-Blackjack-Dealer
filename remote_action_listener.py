@@ -1,5 +1,7 @@
 """Translate received 433MHz button codes into blackjack player actions."""
 
+import time
+
 import serial
 
 import settings
@@ -24,26 +26,27 @@ def main() -> None:
         settings.BAUD_RATE,
         timeout=settings.SERIAL_TIMEOUT_SECONDS,
     ) as connection:
+        # Opening a serial connection commonly resets an Arduino. Wait for
+        # setup() to finish before reading codes.
+        time.sleep(2)
         connection.reset_input_buffer()
-        connection.write(b"START\n")
         print("Listening for mapped player actions. Press Ctrl+C to stop.")
 
         while True:
             line = connection.readline().decode(errors="ignore").strip()
-            if not line or not line.startswith("CODE:"):
+            if not line:
                 continue
-            code_text = line.split(":", 1)[1]
-            if not code_text.isdigit():
+            if not line.isdigit():
                 print(f"Ignoring non-numeric code line: {line}")
                 continue
 
-            code = int(code_text)
+            code = int(line)
             matched_actions = [action for mapped_code, action in ACTION_MAPPINGS if mapped_code > 0 and mapped_code == code]
             if matched_actions:
                 for action in matched_actions:
                     print(action)
             else:
-                print(f"Unmapped code: {code}")
+                print(f"NOT REGISTERED REMOTE: {code}")
 
 
 if __name__ == "__main__":

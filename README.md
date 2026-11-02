@@ -36,3 +36,12 @@ python remote_action_listener.py
 When a mapped button is pressed, it prints messages like:
 - `PLAYER 1 WANTS TO HIT`
 - `PLAYER 2 WANTS TO STAND`
+
+### 5) Run the blackjack game
+Run the game with the number of players as an argument:
+```bash
+python blackjack.py 4
+```
+
+The game waits for each player's configured HIT or STAND remote button. Card
+values are currently placeholders generated randomly from 1 through 10.
