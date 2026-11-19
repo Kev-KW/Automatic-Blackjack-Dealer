@@ -9,22 +9,23 @@ import traceback
 import tkinter as tk
 from tkinter import font as tkfont
 
-import gameSetup
-import screen
+from src.game import gameSetup
+from src.gui import screen
+from src.hardware.remoteController import submit_virtual_key
 
 
 # ============================================================
 # SETTINGS
 # ============================================================
 
-WINDOW_WIDTH = 1000
-WINDOW_HEIGHT = 700
+WINDOW_WIDTH = 1280
+WINDOW_HEIGHT = 720
 
 BACKGROUND = "black"
 TEXT_COLOR = "#00ff00"
 ERROR_COLOR = "#ff0000"
 
-FONT_SIZE = 18
+FONT_SIZE = 26
 FONT_FAMILY = "Consolas"
 
 UPDATE_INTERVAL = 150
@@ -35,7 +36,7 @@ TOP_RATIO = 0.55
 BOTTOM_RATIO = 0.45
 
 # Fixed-width area so text never shifts horizontally
-TABLE_COLUMNS = 48
+TABLE_COLUMNS = 36
 
 
 # ============================================================
@@ -77,8 +78,8 @@ def run():
     root = tk.Tk()
     root.title("Automatic Blackjack Dealer")
 
-    root.geometry(f"{WINDOW_WIDTH}x{WINDOW_HEIGHT}")
-    root.minsize(700, 450)
+    root.attributes("-fullscreen", True)
+    root.bind("<Escape>", lambda _event: on_close())
     root.configure(bg=BACKGROUND)
 
     game_font = tkfont.Font(
@@ -156,7 +157,7 @@ def run():
     setup_label = tk.Label(
         top_frame,
         text="",
-        font=game_font,
+        font=(FONT_FAMILY, FONT_SIZE + 8, "bold"),
         bg=BACKGROUND,
         fg=TEXT_COLOR,
         justify=tk.CENTER,
@@ -520,6 +521,16 @@ def run():
         "WM_DELETE_WINDOW",
         on_close
     )
+
+    def virtual_key(event):
+        key = event.char.strip().upper()
+        if key == "Q":
+            on_close()
+            return
+        if key:
+            submit_virtual_key(key)
+
+    root.bind_all("<Key>", virtual_key)
 
     # ========================================================
     # START

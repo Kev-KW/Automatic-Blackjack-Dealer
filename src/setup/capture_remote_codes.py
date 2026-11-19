@@ -1,33 +1,21 @@
-"""Capture and print raw 433MHz button codes from Arduino over serial."""
+"""Capture and print raw 433MHz button codes directly with rpi_rf."""
 
-import time
-
-import serial
-
-from src import settings
+from src.hardware.remoteController import RemoteController
 
 
 def main() -> None:
-    print(f"Opening {settings.SERIAL_PORT} at {settings.BAUD_RATE} baud...")
-    with serial.Serial(
-        settings.SERIAL_PORT,
-        settings.BAUD_RATE,
-        timeout=settings.SERIAL_TIMEOUT_SECONDS,
-    ) as connection:
-        # Opening a serial connection commonly resets an Arduino. Wait for
-        # setup() to finish before reading codes.
-        time.sleep(2)
-        connection.reset_input_buffer()
-        print("Listening for remote presses. Press Ctrl+C to stop.")
-
+    remote = RemoteController()
+    remote.start()
+    print("Listening for remote presses. Press Ctrl+C to stop.")
+    try:
         while True:
-            line = connection.readline().decode(errors="ignore").strip()
-            if not line:
+            timestamp = remote.device.rx_code_timestamp
+            if timestamp is None or timestamp == remote.last_timestamp:
                 continue
-            if line.isdigit():
-                print(f"Received remote code: {line}")
-            else:
-                print(line)
+            remote.last_timestamp = timestamp
+            print(f"Received remote code: {remote.device.rx_code}")
+    finally:
+        remote.close()
 
 
 if __name__ == "__main__":

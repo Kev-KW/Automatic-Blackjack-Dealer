@@ -1,10 +1,7 @@
 """Translate received 433MHz button codes into blackjack player actions."""
 
-import time
-
-import serial
-
 from src import settings
+from src.hardware.remoteController import RemoteController
 
 
 ACTION_MAPPINGS = [
@@ -20,33 +17,18 @@ ACTION_MAPPINGS = [
 
 
 def main() -> None:
-    print(f"Opening {settings.SERIAL_PORT} at {settings.BAUD_RATE} baud...")
-    with serial.Serial(
-        settings.SERIAL_PORT,
-        settings.BAUD_RATE,
-        timeout=settings.SERIAL_TIMEOUT_SECONDS,
-    ) as connection:
-        # Opening a serial connection commonly resets an Arduino. Wait for
-        # setup() to finish before reading codes.
-        time.sleep(2)
-        connection.reset_input_buffer()
-        print("Listening for mapped player actions. Press Ctrl+C to stop.")
-
+    remote = RemoteController()
+    remote.start()
+    print("Listening for mapped player actions. Press Ctrl+C to stop.")
+    try:
         while True:
-            line = connection.readline().decode(errors="ignore").strip()
-            if not line:
+            press = remote.read_press()
+            if press is None:
                 continue
-            if not line.isdigit():
-                print(f"Ignoring non-numeric code line: {line}")
-                continue
-
-            code = int(line)
-            matched_actions = [action for mapped_code, action in ACTION_MAPPINGS if mapped_code > 0 and mapped_code == code]
-            if matched_actions:
-                for action in matched_actions:
-                    print(action)
-            else:
-                print(f"NOT REGISTERED REMOTE: {code}")
+            player, action = press
+            print(f"PLAYER {player} WANTS TO {action.upper()}")
+    finally:
+        remote.close()
 
 
 if __name__ == "__main__":
